@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}转写记录{% endblock %}</title>
+  {% if refresh %}
+  <meta http-equiv="refresh" content="5">
+  {% endif %}
+  <script>
+(function () {
+  var root = document.documentElement;
+  var media = window.matchMedia("(prefers-color-scheme: dark)");
+
+  function readSaved() {
+    try {
+      var stored = localStorage.getItem("theme");
+      if (stored === "ledger" || stored === "studio") {
+        return stored;
+      }
+    } catch (error) {
+      return null;
+    }
+    return null;
+  }
+
+  function applySystem() {
+    root.setAttribute("data-theme", media.matches ? "studio" : "ledger");
+  }
+
+  var saved = readSaved();
+  if (saved) {
+    root.setAttribute("data-theme", saved);
+  } else {
+    applySystem();
+    media.addEventListener("change", function () {
+      if (readSaved()) {
+        return;
+      }
+      applySystem();
+    });
+  }
+})();
+  </script>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="wrap{% if page == 'list' %} wrap-workbench{% endif %}">
+    <header class="topbar">
+      <div class="topbar-lead">
+        <a class="brand" href="/">转写</a>
+        <nav class="topnav" aria-label="主导航">
+          <a href="/" {% if page == "list" %}aria-current="page"{% endif %}>工作台</a>
+          <a href="/#live">最近转写</a>
+        </nav>
+      </div>
+      <div class="topbar-rest">
+        {% if usage %}
+        <span id="usage" class="usage">{{ usage }}</span>
+        {% endif %}
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="切换主题">
+          <svg data-icon="sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <circle cx="12" cy="12" r="3.5"></circle>
+            <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M4.8 4.8l1.6 1.6M17.6 17.6l1.6 1.6M19.2 4.8l-1.6 1.6M6.4 17.6l-1.6 1.6"></path>
+          </svg>
+          <svg data-icon="moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 14.6A7.8 7.8 0 1 1 9.4 4.2 6.2 6.2 0 0 0 20 14.6z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+    {% block content %}{% endblock %}
+  </div>
+  <script src="/static/app.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

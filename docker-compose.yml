@@ -1,0 +1,15 @@
+services:
+  transcriber:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8900:8900"
+    volumes:
+      - "${HOME}/transcriber-data:/data"
+      - "${HOME}/.cache/modelscope:/root/.cache/modelscope"
+      - "${HOME}/.cache/huggingface:/root/.cache/huggingface"
+    env_file:
+      - path: "${HOME}/.transcriber/transcriber.env"
+        required: false
+    environment:
+      TRANSCRIBER_STUB: "${TRANSCRIBER_STUB:-}"

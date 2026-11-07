@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}在线录音{% endblock %}
+{% block content %}
+<div class="record" data-record
+     data-prefill-name="{{ prefill_name }}"
+     data-max-seconds="{{ limits.max_seconds }}"
+     data-part-seconds="{{ limits.part_seconds }}"
+     data-max-parts="{{ limits.max_parts }}"
+     data-open-limit="{{ limits.open_limit }}"
+     data-warn-seconds="{{ limits.warn_seconds | join(',') }}">
+  <h1 class="page-title">在线录音</h1>
+
+  <p class="record-notice" data-insecure hidden>
+    当前页面不是安全上下文（HTTPS），浏览器不允许录音。请用 Tailscale Serve 的 HTTPS 地址打开本页；
+    本地址的其余功能不受影响。
+  </p>
+
+  <p class="record-error" data-error hidden></p>
+
+  <section class="card record-setup" data-setup>
+    <label class="field">
+      <span class="field-label">名称</span>
+      <input type="text" data-name value="{{ prefill_name }}" maxlength="120" autocomplete="off">
+      <span class="field-note">留空则用默认「未命名」编号</span>
+    </label>
+
+    <div class="tier-switch" role="radiogroup" aria-label="档位">
+      <input type="radio" name="record-tier" id="record-tier-fast" value="fast" checked>
+      <input type="radio" name="record-tier" id="record-tier-precise" value="precise">
+      <span class="tier-thumb" aria-hidden="true"></span>
+      <label for="record-tier-fast">
+        <span>快档</span>
+        <span class="field-note">约 1/5 时长出稿</span>
+      </label>
+      <label for="record-tier-precise">
+        <span>精档</span>
+        <span class="field-note">区分说话人 · 生成纪要</span>
+      </label>
+    </div>
+
+    <button type="button" class="record-btn" data-start disabled>
+      <span class="record-btn-dot" aria-hidden="true"></span>
+      <span data-start-label>开始录音</span>
+    </button>
+    <p class="field-note">最长 1 小时，剩余 5 分钟、1 分钟各提示一次，到限自动结束并送转写</p>
+  </section>
+
+  <section class="card record-live" data-live hidden>
+    <p class="record-timer" data-timer>00:00</p>
+    <p class="record-warn" data-warn hidden></p>
+    <canvas class="record-wave" data-wave width="720" height="72" aria-hidden="true"></canvas>
+    <p class="record-meta">
+      <span>已保存 <strong data-saved>0</strong> 片</span>
+      <span>待传 <strong data-pending>0</strong> 片</span>
+      <span data-state>录音中</span>
+    </p>
+    <p class="field-note">录音时请保持页面在前台；锁屏或切后台可能中断录音。</p>
+    <div class="record-actions">
+      <button type="button" class="btn" data-pause>暂停</button>
+      <button type="button" class="btn primary" data-stop>结束并转写</button>
+    </div>
+  </section>
+
+  <p class="record-back"><a href="/" data-back>返回工作台</a></p>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/record.js"></script>
+{% endblock %}

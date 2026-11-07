@@ -1,0 +1,11 @@
+.venv/
+.env
+__pycache__/
+data/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.verify-browsers/
+.verify-tmp/
+verify-out/

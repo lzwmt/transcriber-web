@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}{{ job.source_name }}{% endblock %}
+{% block content %}
+<div class="title-block" data-rename-scope>
+  <div class="title-row">
+    <h1 class="page-title">{{ job.source_name }}</h1>
+    <button type="button" class="rename-btn" data-rename-open aria-label="重命名" title="重命名">
+      <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 20h4l10-10a2.8 2.8 0 0 0-4-4L4 16z"></path>
+        <path d="M13.5 6.5l4 4"></path>
+      </svg>
+    </button>
+  </div>
+  <div class="rename-editor" data-rename-editor data-job-id="{{ job.id }}" hidden>
+    <input type="text" data-rename-input value="{{ job.source_name }}" maxlength="120" aria-label="任务名称">
+    <button type="button" class="rename-save" data-rename-save>保存</button>
+    <button type="button" class="rename-cancel" data-rename-cancel>取消</button>
+  </div>
+  <p class="rename-error" data-rename-error hidden></p>
+</div>
+<div class="meta-row">
+  <span class="badge badge-{{ job.status }}">{{ job.status_label }}</span>
+  <span class="badge badge-tier">{{ job.tier_label }}</span>
+  <span class="muted">{{ job.duration_label }}</span>
+  <span class="muted">{{ job.created_label }}</span>
+  {% if job.source_kind == "url" and job.source_domain %}
+  <span class="muted" data-source-domain>{{ job.source_domain }}</span>
+  {% endif %}
+</div>
+{% if job.processing %}
+<p class="banner">处理中，页面将自动刷新</p>
+{% endif %}
+
+{% if job.audio_ready %}
+<div class="card player" id="player" data-audio-player data-duration="{{ job.duration or 0 }}">
+  <audio id="audio" preload="metadata">
+    <!-- 当任务同时有可播集合内的原始文件与 audio.wav 且非同一文件时，渲染两个 source：先默认端点（原始），后 ?fmt=wav（回落）。浏览器在首个 source 无法解码时自动尝试下一个 source，依赖浏览器原生行为。其余情形维持单 source。 -->
+    <source src="/jobs/{{ job.id }}/audio">
+    {% if job.audio_has_fallback %}
+    <source src="/jobs/{{ job.id }}/audio?fmt=wav">
+    {% endif %}
+  </audio>
+  <div class="p-top">
+    <button class="play" id="play" aria-label="播放" type="button">
+      <svg class="icon-play" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M4.5 2.8v10.4a.6.6 0 0 0 .9.5l8.3-5.2a.6.6 0 0 0 0-1L5.4 2.3a.6.6 0 0 0-.9.5z"/></svg>
+      <svg class="icon-pause" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display:none"><rect x="3.5" y="2.5" width="3" height="11" rx="1"/><rect x="9.5" y="2.5" width="3" height="11" rx="1"/></svg>
+    </button>
+    <button class="skip" id="skip-back" aria-label="后退 15 秒" type="button" data-skip="-15">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.6M4 4v4.6h4.6"/></svg>
+    </button>
+    <button class="skip" id="skip-fwd" aria-label="前进 15 秒" type="button" data-skip="15">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.7L20 8.6M20 4v4.6h-4.6"/></svg>
+    </button>
+    <div class="time num" id="player-time"><span class="curr">0:00</span> <span class="total">/ {{ job.duration_label or "0:00" }}</span></div>
+    <div class="sp"></div>
+    <button class="speed num" id="speed" aria-label="播放倍速" type="button">1.0x</button>
+  </div>
+  <div class="track" id="player-track">
+    <div class="wave" id="wave" aria-label="波形与进度"></div>
+    <div class="head" id="head"></div>
+  </div>
+</div>
+{% else %}
+<div class="card player-empty">
+  <p class="muted">{% if job.status == "failed" %}任务已失败，暂无可播放音频{% elif job.status != "done" %}任务尚未完成，暂无可播放音频{% else %}音频文件不存在或格式不可用{% endif %}</p>
+</div>
+{% endif %}
+
+<section class="card">
+  <h2 class="card-title">纪要</h2>
+  {% if job.minutes_ready %}
+    <div class="minutes-body">{{ job.minutes_html | safe }}</div>
+  {% elif job.minutes_status == "error" %}
+    <p class="error">{{ job.minutes_error or "纪要生成失败" }}</p>
+    <form method="post" action="/jobs/{{ job.id }}/minutes/regenerate">
+      <button class="btn" type="submit">重新生成</button>
+    </form>
+  {% else %}
+    <p class="muted">{{ job.minutes_label }}</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2 class="card-title">逐字稿</h2>
+  {% if job.segments %}
+    {% set speakers = [] %}
+    {% for seg in job.segments %}{% if seg.speaker and seg.speaker not in speakers %}{% set _ = speakers.append(seg.speaker) %}{% endif %}{% endfor %}
+    <div class="transcript">
+      {% for seg in job.segments %}
+      <p class="seg-line" data-start="{{ seg.start }}" data-end="{{ seg.end }}">
+        <span class="seg-time"><span class="ts" role="button" tabindex="0" data-seek="{{ seg.start }}">{{ seg.stamp }}</span></span>
+        <span class="seg-body">{% if seg.speaker %}<span class="seg-speaker spk-{{ speakers.index(seg.speaker) % 4 }}">{{ seg.speaker }}</span>{% endif %}<span class="txt">{{ seg.text }}</span></span>
+      </p>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="muted">逐字稿尚未生成</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2 class="card-title">下载</h2>
+  <div class="download-row">
+    <a class="btn primary" href="/jobs/{{ job.id }}/combined">下载合并版</a>
+    <a class="btn" href="/jobs/{{ job.id }}/transcript">逐字稿</a>
+    {% if job.minutes_ready %}
+    <a class="btn" href="/jobs/{{ job.id }}/minutes">纪要</a>
+    {% else %}
+    <span class="btn disabled" aria-disabled="true">纪要</span>
+    {% endif %}
+  </div>
+</section>
+
+<form class="delete-form" method="post" action="/jobs/{{ job.id }}/delete" onsubmit="return confirm('确定删除该任务？删除后无法恢复。');">
+  <button class="link-danger" type="submit">删除任务</button>
+</form>
+{% endblock %}

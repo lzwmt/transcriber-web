@@ -1,0 +1,10 @@
+name: transcriber
+setup: uv sync
+start: ./run.sh
+gates:
+  tsc: uv run mypy app
+  lint: uv run ruff check .
+  test: uv run pytest
+  build: 无
+database: sqlite，测试使用临时目录，不需要一次性测试库
+network: 仅内网或 Tailscale，禁止公网暴露

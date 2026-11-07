@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}录音待补传{% endblock %}
+{% block content %}
+<div class="record record-detail">
+  <h1 class="page-title">{{ session.source_name }}</h1>
+
+  <section class="card">
+    <p class="record-meta">
+      <span>状态 <strong>{{ session.status_text }}</strong></span>
+      <span>档位 <strong>{% if session.tier == "precise" %}精档{% else %}快档{% endif %}</strong></span>
+      <span>已保存 <strong data-saved-parts>{{ session.saved_parts }}</strong> 片</span>
+      <span>已录时长 <strong data-recorded>{{ session.recorded_seconds | round(0) | int }}</strong> 秒</span>
+    </p>
+    {% if session.job_id %}
+    <p class="record-back"><a href="/jobs/{{ session.job_id }}/view">打开转写任务</a></p>
+    {% endif %}
+    <p class="field-note">本页只显示已保存片数与已录时长；播放与下载在拼合生成任务后才可用。</p>
+  </section>
+
+  <p class="record-back"><a href="/">返回工作台</a></p>
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+[project]
+name = "transcriber"
+version = "0.1.0"
+description = "自用转写后端：上传或链接导入，预处理，双档 ASR，分段 JSON 与 Markdown 逐字稿。"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.32",
+    "python-multipart>=0.0.12",
+    "funasr>=1.2.6",
+    "faster-whisper>=1.1.0",
+    "opencc-python-reimplemented>=0.1.7",
+    "yt-dlp>=2024.12.23",
+    "torch>=2.4",
+    "torchaudio>=2.4",
+    # huggingface_hub 走 SOCKS 代理下载模型时需要 socksio。
+    "socksio>=1.0.0",
+    # faster-whisper 1.2.x 仍向 av.open 传 metadata_errors，PyAV 19 已去掉该参数。
+    "av>=14,<19",
+    "jinja2>=3.1",
+    "markdown>=3.7",
+    "httpx>=0.27",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "mypy>=1.13",
+    "ruff>=0.8",
+]
+# Playwright 只在 verify 分组，对齐宿主机缓存 chromium-1248 / ffmpeg-1013。
+# 不进 default-groups，避免 uv sync --no-dev 把它装进运行镜像。
+verify = [
+    "playwright==1.64.0",
+    "pytest-xdist>=3.8.0",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchaudio = { index = "pytorch-cpu" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "slow: 真实引擎回归。默认随 pytest 一起运行，不单独跳过。",
+]
+
+[tool.mypy]
+python_version = "3.12"
+disallow_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+check_untyped_defs = true
+pretty = true
+
+[[tool.mypy.overrides]]
+module = [
+    "funasr",
+    "funasr.*",
+    "faster_whisper",
+    "faster_whisper.*",
+    "opencc",
+    "opencc.*",
+    "modelscope",
+    "modelscope.*",
+    "markdown",
+    "markdown.*",
+]
+ignore_missing_imports = true
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["app", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "W"]
